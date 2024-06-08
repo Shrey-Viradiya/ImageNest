@@ -1,16 +1,93 @@
-# This is a sample Python script.
+"""
+Application Start Point Where FastAPI is Configured and Endpoints are Defined.
+"""
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+from fastapi import FastAPI
+
+from src.models.board import Board
+from src.models.pin import Pin
+from src.models.user import User
+
+app = FastAPI()
+
+users = []
+boards = []
+pins = []
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f"Hi, {name}")  # Press ⌘F8 to toggle the breakpoint.
+@app.post("/users/")
+async def create_user(user: User):
+    """
+    Create a new user and add it to the users list.
+
+    Args:
+        user (user): The user to be created.
+
+    Returns:
+        user: The created user.
+    """
+    users.append(user)
+    return user
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == "__main__":
-    print_hi("PyCharm")
+@app.get("/users/")
+async def read_users():
+    """
+    Get the list of all users.
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    Returns:
+        list: The list of users.
+    """
+    return users
+
+
+@app.post("/boards/")
+async def create_board(board: Board):
+    """
+    Create a new board and add it to the boards list.
+
+    Args:
+        board (board): The board to be created.
+
+    Returns:
+        board: The created board.
+    """
+    boards.append(board)
+    return board
+
+
+@app.get("/boards/")
+async def read_boards():
+    """
+    Get the list of all boards.
+
+    Returns:
+        list: The list of boards.
+    """
+    return boards
+
+
+@app.post("/pins/")
+async def create_pin(pin: Pin):
+    """
+    Create a new pin and add it to the pins list.
+
+    Args:
+        pin (pin): The pin to be created.
+
+    Returns:
+        pin: The created pin.
+    """
+    pins.append(pin)
+    return pin
+
+
+@app.get("/pins/")
+async def read_pins():
+    """
+    Get the list of all pins.
+
+    Returns:
+        list: The list of pins.
+    """
+    return pins
