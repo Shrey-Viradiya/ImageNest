@@ -19,10 +19,6 @@ from src.models.user_create import UserCreate
 
 app = FastAPI()
 
-users = []
-boards = []
-pins = []
-
 
 def get_db():
     """
