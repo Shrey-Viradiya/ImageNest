@@ -1,3 +1,5 @@
+# pylint: disable=R0913
+
 """
 Application Start Point Where FastAPI is Configured and Endpoints are Defined.
 """
