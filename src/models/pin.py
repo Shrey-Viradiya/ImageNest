@@ -22,6 +22,7 @@ class Pin(BaseModel):
         is_private (bool): Whether the pin is private or not.
     """
 
+    id: int
     title: str
     description: str
     image_url: str
