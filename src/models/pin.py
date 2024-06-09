@@ -27,7 +27,7 @@ class Pin(BaseModel):
     id: Union[int, None] = None
     title: str
     description: str
-    image_url: str
+    image_url: Union[str, None] = None
     board_id: int
     owner_id: int
     is_private: bool

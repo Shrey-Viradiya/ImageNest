@@ -2,10 +2,13 @@
 Application Start Point Where FastAPI is Configured and Endpoints are Defined.
 """
 
-from fastapi import Depends, FastAPI, HTTPException
+import aiofiles
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
+from src.constants import S3_BUCKET
 from src.db import crud
+from src.db.object_store import upload_to_s3
 from src.db.session import SessionLocal
 from src.models.board import Board
 from src.models.pin import Pin
@@ -99,19 +102,49 @@ async def read_boards_by_user(user_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/pins/")
-async def create_pin(pin: Pin, db: Session = Depends(get_db)):
+async def create_pin(
+    title: str = Form(...),
+    description: str = Form(...),
+    board_id: int = Form(...),
+    owner_id: int = Form(...),
+    is_private: bool = Form(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
     """
-    Create a new pin and add it to the pins table.
-    :param pin: The pin to create.
+    Create a new pin and add it to the pins list.
+    :param title: The title of the pin.
+    :param description: A brief description of the pin.
+    :param board_id: The ID of the board the pin belongs to.
+    :param owner_id: The ID of the user who owns the pin.
+    :param is_private: Whether the pin is private or not.
+    :param file: The image file to upload.
     :param db: The database session.
     :return: The created pin.
     """
-    db_user = crud.get_user(db, user_id=pin.owner_id)
-    db_board = crud.get_board(db, board_id=pin.board_id)
+    db_user = crud.get_user(db, user_id=owner_id)
+    db_board = crud.get_board(db, board_id=board_id)
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     if db_board is None:
         raise HTTPException(status_code=404, detail="Board not found")
+
+    # Save the file to a temporary location
+    temp_file_path = f"/tmp/{file.filename}"
+    async with aiofiles.open(temp_file_path, "wb") as buffer:
+        data = await file.read()  # async read
+        await buffer.write(data)
+
+    image_url = upload_to_s3(temp_file_path, S3_BUCKET, file.filename)
+
+    pin = Pin(
+        title=title,
+        description=description,
+        board_id=board_id,
+        owner_id=owner_id,
+        is_private=is_private,
+        image_url=image_url,
+    )
     return crud.create_pin(db=db, pin=pin)
 
 
