@@ -3,6 +3,8 @@
 """
 Application Start Point Where FastAPI is Configured and Endpoints are Defined.
 """
+import os
+import uuid
 
 import aiofiles
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
@@ -127,13 +129,11 @@ async def create_pin(
     if db_board is None:
         raise HTTPException(status_code=404, detail="Board not found")
 
-    # Save the file to a temporary location
-    temp_file_path = f"/tmp/{file.filename}"
-    async with aiofiles.open(temp_file_path, "wb") as buffer:
-        data = await file.read()  # async read
-        await buffer.write(data)
+    filename, temp_file_path = await get_file_name(file)
 
-    image_url = upload_to_s3(temp_file_path, S3_BUCKET, file.filename)
+    image_url = upload_to_s3(temp_file_path, S3_BUCKET, filename)
+
+    os.remove(temp_file_path)
 
     pin = Pin(
         title=title,
@@ -144,6 +144,26 @@ async def create_pin(
         image_url=image_url,
     )
     return crud.create_pin(db=db, pin=pin)
+
+
+async def get_file_name(file):
+    """
+    Get the file name.
+    :param file: The file to get the name of.
+    :return: The name of the file.
+    """
+    # Generate a random filename
+    filename = str(uuid.uuid4())
+    file_extension = file.filename.split(".")[-1]  # Get the file extension
+    filename = (
+        f"{filename}.{file_extension}"  # Append the file extension to the filename
+    )
+    # Save the file to a temporary location
+    temp_file_path = f"/tmp/{filename}"
+    async with aiofiles.open(temp_file_path, "wb") as buffer:
+        data = await file.read()  # async read
+        await buffer.write(data)
+    return filename, temp_file_path
 
 
 @app.get("/pins/{pin_id}")
