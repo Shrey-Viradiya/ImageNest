@@ -2,4 +2,11 @@
 Constants for the project
 """
 
-DATABASE_URL = "postgresql://postgres:password@localhost:5432/imagenest"
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+S3_BUCKET = os.getenv("S3_BUCKET_URL")

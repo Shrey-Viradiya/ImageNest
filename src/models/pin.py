@@ -6,6 +6,8 @@ It includes attributes for the pin's
 title, description, image_url, board_id, owner_id, and is_private status.
 """
 
+from typing import Union
+
 from pydantic import BaseModel
 
 
@@ -22,7 +24,7 @@ class Pin(BaseModel):
         is_private (bool): Whether the pin is private or not.
     """
 
-    id: int
+    id: Union[int, None] = None
     title: str
     description: str
     image_url: str

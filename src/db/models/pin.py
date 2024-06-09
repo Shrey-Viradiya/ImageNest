@@ -1,3 +1,5 @@
+# pylint: disable=R0903
+
 """
 This module contains the Pin model.
 
@@ -32,5 +34,7 @@ class Pin(Base):
     image_url = Column(String)
     board_id = Column(Integer, ForeignKey("boards.id"))
     owner_id = Column(Integer, ForeignKey("users.id"))
+    is_private = Column(Integer)
 
     user = relationship("User", back_populates="pins")
+    board = relationship("Board", back_populates="pins")

@@ -1,3 +1,5 @@
+# pylint: disable=R0903
+
 """
 This module defines the Board model.
 
@@ -26,10 +28,11 @@ class Board(Base):
 
     __tablename__ = "boards"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String)
     description = Column(String)
     is_private = Column(Integer)
     owner_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="boards")
+    pins = relationship("Pin", back_populates="board")

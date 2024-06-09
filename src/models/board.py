@@ -6,6 +6,8 @@ It includes attributes for the board's id, name, description, owner_id,
 and is_private status.
 """
 
+from typing import Union
+
 from pydantic import BaseModel
 
 
@@ -21,7 +23,7 @@ class Board(BaseModel):
         is_private (bool): Whether the board is private or not.
     """
 
-    id: int
+    id: Union[int, None] = None
     name: str
     description: str
     owner_id: int
