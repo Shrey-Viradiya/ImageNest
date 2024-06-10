@@ -167,7 +167,7 @@ async def get_file_name(file):
 
 
 @app.get("/pins/{pin_id}")
-async def read_pins(pin_id: int, db: Session = Depends(get_db)):
+async def get_pin(pin_id: int, db: Session = Depends(get_db)):
     """
     Get a pin by ID.
     :param pin_id: The ID of the pin.
@@ -178,7 +178,7 @@ async def read_pins(pin_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/pins/board/{board_id}")
-async def read_pins_by_board(board_id: int, db: Session = Depends(get_db)):
+async def get_pins_by_board(board_id: int, db: Session = Depends(get_db)):
     """
     Get all pins for a board.
     :param board_id: The ID of the board.
