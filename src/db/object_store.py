@@ -15,6 +15,27 @@ s3 = boto3.client(
 )
 
 
+def generate_presigned_url(bucket, s3_file_name, expiration=3600):
+    """
+    Generate a presigned URL to share an S3 object
+    :param bucket: string
+    :param s3_file_name: string
+    :param expiration: Time in seconds for the presigned URL to remain valid
+    :return: Presigned URL as string. If error, returns None.
+    """
+
+    try:
+        response = s3.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": bucket, "Key": s3_file_name},
+            ExpiresIn=expiration,
+        )
+    except NoCredentialsError:
+        print("Credentials not available")
+        return None
+    return response
+
+
 def upload_to_s3(file_path, bucket, s3_file_name):
     """
     Upload a file to an S3 bucket.

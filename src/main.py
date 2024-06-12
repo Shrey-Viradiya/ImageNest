@@ -8,11 +8,12 @@ import uuid
 
 import aiofiles
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from src.constants import S3_BUCKET
 from src.db import crud
-from src.db.object_store import upload_to_s3
+from src.db.object_store import generate_presigned_url, upload_to_s3
 from src.db.session import SessionLocal
 from src.models.board import Board
 from src.models.pin import Pin
@@ -20,6 +21,16 @@ from src.models.user import User
 from src.models.user_create import UserCreate
 
 app = FastAPI()
+
+origins = ["http://localhost:3000"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def get_db():
@@ -174,7 +185,9 @@ async def get_pin(pin_id: int, db: Session = Depends(get_db)):
     :param db: The database session.
     :return: The pin with the given ID.
     """
-    return crud.get_pin(db, pin_id=pin_id)
+    pin = crud.get_pin(db, pin_id=pin_id)
+    pin.image_url = generate_presigned_url(S3_BUCKET, pin.image_url.split("/")[-1])
+    return pin
 
 
 @app.get("/pins/board/{board_id}")
@@ -185,4 +198,7 @@ async def get_pins_by_board(board_id: int, db: Session = Depends(get_db)):
     :param db: The database session.
     :return: A list of pins for the board.
     """
-    return crud.get_pins_by_board(db, board_id=board_id)
+    pins = crud.get_pins_by_board(db, board_id=board_id)
+    for pin in pins:
+        pin.image_url = generate_presigned_url(S3_BUCKET, pin.image_url.split("/")[-1])
+    return pins
