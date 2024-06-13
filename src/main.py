@@ -1,4 +1,4 @@
-# pylint: disable=R0913
+# pylint: disable=R0913,R0914
 
 """
 Application Start Point Where FastAPI is Configured and Endpoints are Defined.
@@ -9,6 +9,8 @@ import uuid
 import aiofiles
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from PIL import Image, ImageOps
+from PIL.Image import Resampling
 from sqlalchemy.orm import Session
 
 from src.constants import S3_BUCKET
@@ -112,7 +114,7 @@ async def read_boards_by_user(user_id: int, db: Session = Depends(get_db)):
     return crud.get_boards_by_owner(db, user_id=user_id)
 
 
-@app.post("/pins/")
+@app.post("/pins/create/")
 async def create_pin(
     title: str = Form(...),
     description: str = Form(...),
@@ -140,9 +142,13 @@ async def create_pin(
     if db_board is None:
         raise HTTPException(status_code=404, detail="Board not found")
 
-    filename, temp_file_path = await get_file_name(file)
+    filename, temp_file_path, temp_thumbnail_file_path = await get_file_name(file)
+    thumbnail_filename = "thumbnail_" + filename
 
     image_url = upload_to_s3(temp_file_path, S3_BUCKET, filename)
+    thumbnail_image_url = upload_to_s3(
+        temp_thumbnail_file_path, S3_BUCKET, thumbnail_filename
+    )
 
     os.remove(temp_file_path)
 
@@ -153,6 +159,7 @@ async def create_pin(
         owner_id=owner_id,
         is_private=is_private,
         image_url=image_url,
+        thumbnail_url=thumbnail_image_url,
     )
     return crud.create_pin(db=db, pin=pin)
 
@@ -174,11 +181,42 @@ async def get_file_name(file):
     async with aiofiles.open(temp_file_path, "wb") as buffer:
         data = await file.read()  # async read
         await buffer.write(data)
-    return filename, temp_file_path
+
+    # Open the image file
+    with Image.open(temp_file_path) as img:
+        # Correct the orientation using the EXIF data
+        img = ImageOps.exif_transpose(img)
+
+        # Calculate the height using the same aspect ratio
+        ratio = img.width / img.height
+        hsize = int(300 / ratio)
+        img.thumbnail((300, hsize), Resampling.LANCZOS)
+
+        # Save the resized image as thumbnail
+        thumbnail_file_path = f"/tmp/thumbnail_{filename}"
+        img.save(thumbnail_file_path)
+    return filename, temp_file_path, thumbnail_file_path
+
+
+@app.get("/pins")
+async def get_pin(number: int = 10, db: Session = Depends(get_db)):
+    """
+    Get random public pin.
+    :param pin_id: The ID of the pin.
+    :param db: The database session.
+    :return: The pin with the given ID.
+    """
+    pins = crud.get_random_public_pins(db, number=number)
+    for pin in pins:
+        pin.image_url = generate_presigned_url(S3_BUCKET, pin.image_url.split("/")[-1])
+        pin.thumbnail_url = generate_presigned_url(
+            S3_BUCKET, pin.thumbnail_url.split("/")[-1]
+        )
+    return pins
 
 
 @app.get("/pins/{pin_id}")
-async def get_pin(pin_id: int, db: Session = Depends(get_db)):
+async def get_pin_by_id(pin_id: int, db: Session = Depends(get_db)):
     """
     Get a pin by ID.
     :param pin_id: The ID of the pin.
@@ -187,6 +225,9 @@ async def get_pin(pin_id: int, db: Session = Depends(get_db)):
     """
     pin = crud.get_pin(db, pin_id=pin_id)
     pin.image_url = generate_presigned_url(S3_BUCKET, pin.image_url.split("/")[-1])
+    pin.thumbnail_url = generate_presigned_url(
+        S3_BUCKET, pin.thumbnail_url.split("/")[-1]
+    )
     return pin
 
 
@@ -201,4 +242,7 @@ async def get_pins_by_board(board_id: int, db: Session = Depends(get_db)):
     pins = crud.get_pins_by_board(db, board_id=board_id)
     for pin in pins:
         pin.image_url = generate_presigned_url(S3_BUCKET, pin.image_url.split("/")[-1])
+        pin.thumbnail_url = generate_presigned_url(
+            S3_BUCKET, pin.thumbnail_url.split("/")[-1]
+        )
     return pins

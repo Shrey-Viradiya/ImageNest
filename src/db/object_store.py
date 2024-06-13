@@ -15,7 +15,7 @@ s3 = boto3.client(
 )
 
 
-def generate_presigned_url(bucket, s3_file_name, expiration=3600):
+def generate_presigned_url(bucket, s3_file_name, expiration=300):
     """
     Generate a presigned URL to share an S3 object
     :param bucket: string

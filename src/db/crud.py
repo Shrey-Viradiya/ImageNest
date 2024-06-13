@@ -2,6 +2,7 @@
 This Module defines the CRUD operations for the application.
 """
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from src.db.models.board import Board as BoardModel
@@ -104,6 +105,7 @@ def create_pin(db: Session, pin: Pin):
         image_url=pin.image_url,
         board_id=pin.board_id,
         owner_id=pin.owner_id,
+        thumbnail_url=pin.thumbnail_url,
         is_private=1 if pin.is_private else 0,
     )
     db.add(db_pin)
@@ -120,6 +122,23 @@ def get_pin(db: Session, pin_id: int):
     :return: The pin with the given ID.
     """
     return db.query(PinModel).filter(PinModel.id == pin_id).first()
+
+
+def get_random_public_pins(db: Session, number: int):
+    """
+    Get random
+    :param db: The database session.
+    :param number: number of pin.
+    :return: The pin with the given ID.
+    """
+    # pylint: disable=E1102
+    return (
+        db.query(PinModel)
+        .filter(PinModel.is_private == 0)
+        .order_by(func.random())
+        .limit(number)
+        .all()
+    )
 
 
 def get_pins_by_board(db: Session, board_id: int):

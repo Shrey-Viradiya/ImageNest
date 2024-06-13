@@ -32,6 +32,7 @@ class Pin(Base):
     title = Column(String)
     description = Column(String)
     image_url = Column(String)
+    thumbnail_url = Column(String)
     board_id = Column(Integer, ForeignKey("boards.id"))
     owner_id = Column(Integer, ForeignKey("users.id"))
     is_private = Column(Integer)
