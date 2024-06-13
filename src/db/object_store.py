@@ -3,6 +3,7 @@ This module helps to upload files to an S3 bucket.
 """
 
 import boto3
+import cachetools
 from botocore.exceptions import NoCredentialsError
 
 from src.constants import AWS_ACCESS_KEY_ID, AWS_REGION, AWS_SECRET_ACCESS_KEY
@@ -14,7 +15,11 @@ s3 = boto3.client(
     region_name=AWS_REGION,
 )
 
+# Create a cache object with a maximum size of 1000 items and a TTL of 180 seconds (3 minutes)
+cache = cachetools.TTLCache(maxsize=1000, ttl=180)
 
+
+@cachetools.cached(cache, key=lambda bucket, object_name: object_name)
 def generate_presigned_url(bucket, s3_file_name, expiration=300):
     """
     Generate a presigned URL to share an S3 object
@@ -30,6 +35,7 @@ def generate_presigned_url(bucket, s3_file_name, expiration=300):
             Params={"Bucket": bucket, "Key": s3_file_name},
             ExpiresIn=expiration,
         )
+        print("here")
     except NoCredentialsError:
         print("Credentials not available")
         return None
