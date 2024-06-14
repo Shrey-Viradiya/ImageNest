@@ -2,11 +2,15 @@
 This module helps to upload files to an S3 bucket.
 """
 
+import logging
+
 import boto3
 import cachetools
 from botocore.exceptions import NoCredentialsError
 
 from src.constants import AWS_ACCESS_KEY_ID, AWS_REGION, AWS_SECRET_ACCESS_KEY
+
+logging.basicConfig(level=logging.INFO)
 
 s3 = boto3.client(
     "s3",
@@ -35,9 +39,8 @@ def generate_presigned_url(bucket, s3_file_name, expiration=300):
             Params={"Bucket": bucket, "Key": s3_file_name},
             ExpiresIn=expiration,
         )
-        print("here")
     except NoCredentialsError:
-        print("Credentials not available")
+        logging.error("Credentials not available")
         return None
     return response
 
@@ -53,13 +56,13 @@ def upload_to_s3(file_path, bucket, s3_file_name):
 
     try:
         s3.upload_file(file_path, bucket, s3_file_name)
-        print("Upload Successful")
+        logging.info("Upload Successful for file %s", s3_file_name)
         return f"https://{bucket}.s3.amazonaws.com/{s3_file_name}"
     except FileNotFoundError:
-        print("The file was not found")
+        logging.error("The file was not found")
         return None
     except NoCredentialsError:
-        print("Credentials not available")
+        logging.error("Credentials not available")
         return None
 
 
@@ -74,8 +77,8 @@ def download_from_s3(bucket, s3_file_name, local_file_path):
 
     try:
         s3.download_file(bucket, s3_file_name, local_file_path)
-        print("Download Successful")
+        logging.info("Download Successful for file %s", s3_file_name)
     except FileNotFoundError:
-        print("The file was not found")
+        logging.error("The file was not found")
     except NoCredentialsError:
-        print("Credentials not available")
+        logging.error("Credentials not available")
