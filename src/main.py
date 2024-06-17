@@ -224,10 +224,11 @@ async def get_pin_by_id(pin_id: int, db: Session = Depends(get_db)):
     :return: The pin with the given ID.
     """
     pin = crud.get_pin(db, pin_id=pin_id)
-    pin.image_url = generate_presigned_url(S3_BUCKET, pin.image_url.split("/")[-1])
-    pin.thumbnail_url = generate_presigned_url(
-        S3_BUCKET, pin.thumbnail_url.split("/")[-1]
-    )
+    if pin is not None:
+        pin.image_url = generate_presigned_url(S3_BUCKET, pin.image_url.split("/")[-1])
+        pin.thumbnail_url = generate_presigned_url(
+            S3_BUCKET, pin.thumbnail_url.split("/")[-1]
+        )
     return pin
 
 
